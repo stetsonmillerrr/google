@@ -55,6 +55,17 @@ module.exports = async (req, res) => {
                     window.location.href = '/api/proxy?url=' + encodeURIComponent('${targetUrl.replace(/\/$/, '')}' + link.href);
                 }
             });
+            // Handle form submissions
+            document.addEventListener('submit', (e) => {
+                const form = e.target.closest('form');
+                if (form && form.action && form.action.startsWith('/')) {
+                    e.preventDefault();
+                    const url = '/api/proxy?url=' + encodeURIComponent('${targetUrl.replace(/\/$/, '')}' + form.action);
+                    const formData = new FormData(form);
+                    const params = new URLSearchParams(formData).toString();
+                    window.location.href = url + (params ? '?' + params : '');
+                }
+            });
         </script></body>`);
 
         // Remove restrictive headers
