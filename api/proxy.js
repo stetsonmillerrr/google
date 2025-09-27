@@ -11,10 +11,11 @@ module.exports = async (req, res) => {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
             },
-            responseType: 'text'
+            responseType: 'text',
+            timeout: 5000 // Fast timeout for responsiveness
         });
 
-        // Rewrite HTML to include base tag and adjust relative URLs
+        // Rewrite HTML to include base tag
         let content = response.data;
         content = content.replace('<head>', `<head><base href="${targetUrl}">`);
 
@@ -26,6 +27,7 @@ module.exports = async (req, res) => {
             }
         });
         res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
 
         res.status(response.status).send(content);
     } catch (error) {
