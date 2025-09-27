@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Theme Iframe Loader for Google</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #121212;
+            color: #e0e0e0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+        .error {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            color: #ff5252;
+            font-size: 14px;
+            background: rgba(40, 40, 40, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="errorMsg" class="error"></div>
+    <iframe id="targetFrame" src="about:blank" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+    <script>
+        async function loadIframe() {
+            const targetUrl = 'https://google.com';
+            const iframe = document.getElementById('targetFrame');
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.textContent = '';
+
+            const proxyUrl = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
+
+            try {
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error('Proxy request failed');
+                const text = await response.text();
+                const blob = new Blob([text], { type: 'text/html' });
+                const blobUrl = URL.createObjectURL(blob);
+                iframe.src = blobUrl;
+                iframe.onload = () => URL.revokeObjectURL(blobUrl);
+            } catch (err) {
+                errorMsg.textContent = 'Failed to load Google. Trying direct load...';
+                console.error(err);
+                iframe.src = targetUrl;
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            const iframe = document.getElementById('targetFrame');
+            iframe.style.width = window.innerWidth + 'px';
+            iframe.style.height = window.innerHeight + 'px';
+        });
+
+        window.onload = () => loadIframe();
+    </script>
+</body>
+</html>
