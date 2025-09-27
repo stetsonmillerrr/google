@@ -3,46 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Iframe Loader</title>
+    <title>Modern Iframe Browser</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background: #121212;
-            color: #e0e0e0;
-            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #e6e6e6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         iframe {
             width: 100%;
             height: 100%;
             border: none;
             display: block;
+            background: #fff;
         }
         .error {
             position: fixed;
-            top: 10px;
-            left: 10px;
+            top: 16px;
+            left: 16px;
             z-index: 1000;
-            color: #ff5252;
+            color: #ff4d4d;
             font-size: 14px;
-            background: rgba(40, 40, 40, 0.9);
-            padding: 10px;
-            border-radius: 5px;
+            background: rgba(40, 40, 40, 0.95);
+            padding: 10px 16px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .loader {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 1000;
+            color: #1e88e5;
+            font-size: 14px;
+            background: rgba(40, 40, 40, 0.95);
+            padding: 10px 16px;
+            border-radius: 6px;
+            display: none;
+        }
+        .loader.active {
+            display: block;
         }
     </style>
 </head>
 <body>
     <div id="errorMsg" class="error"></div>
-    <iframe id="targetFrame" src="https://duckduckgo.com"></iframe>
+    <div id="loader" class="loader">Loading...</div>
+    <iframe id="targetFrame" src="about:blank" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation allow-top-navigation-by-user-activation"></iframe>
     <script>
+        async function loadIframe() {
+            const targetUrl = 'https://www.google.com';
+            const iframe = document.getElementById('targetFrame');
+            const errorMsg = document.getElementById('errorMsg');
+            const loader = document.getElementById('loader');
+            errorMsg.textContent = '';
+            loader.classList.add('active');
+
+            const proxyUrl = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
+
+            try {
+                const response = await fetch(proxyUrl, { cache: 'force-cache' });
+                if (!response.ok) throw new Error(`Proxy request failed: ${response.statusText}`);
+                const text = await response.text();
+                if (!text) throw new Error('Empty response from proxy');
+                const blob = new Blob([text], { type: 'text/html' });
+                const blobUrl = URL.createObjectURL(blob);
+                iframe.src = blobUrl;
+                iframe.onload = () => {
+                    URL.revokeObjectURL(blobUrl);
+                    loader.classList.remove('active');
+                };
+            } catch (err) {
+                errorMsg.textContent = 'Failed to load Google. Please try again.';
+                console.error(err);
+                loader.classList.remove('active');
+                // Do not attempt direct load to avoid "refused to connect"
+            }
+        }
+
         window.addEventListener('resize', () => {
             const iframe = document.getElementById('targetFrame');
             iframe.style.width = window.innerWidth + 'px';
             iframe.style.height = window.innerHeight + 'px';
         });
+
+        window.onload = () => loadIframe();
     </script>
 </body>
 </html>
