@@ -12,12 +12,17 @@ module.exports = async (req, res) => {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
             },
             responseType: 'text',
-            timeout: 5000 // Fast timeout for responsiveness
+            timeout: 5000
         });
 
-        // Rewrite HTML to include base tag
+        // Rewrite HTML to handle dynamic content
         let content = response.data;
+        // Add base tag
         content = content.replace('<head>', `<head><base href="${targetUrl}">`);
+        // Rewrite form actions and script URLs to use proxy
+        content = content.replace(/(action|src|href)="\/([^"]+)"/g, `$1="/api/proxy?url=${encodeURIComponent(targetUrl + '/$2')}";`);
+        // Remove inline CSP
+        content = content.replace(/<meta http-equiv="Content-Security-Policy"[^>]+>/gi, '');
 
         // Remove restrictive headers
         const excludedHeaders = ['X-Frame-Options', 'Content-Security-Policy', 'X-Content-Security-Policy'];
@@ -27,7 +32,7 @@ module.exports = async (req, res) => {
             }
         });
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+        res.setHeader('Cache-Control', 'public, max-age=3600');
 
         res.status(response.status).send(content);
     } catch (error) {
